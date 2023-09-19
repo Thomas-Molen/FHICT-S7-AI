@@ -7,6 +7,9 @@ Task[] tasks = new Task[iterations];
 
 PredictionTechnique predictionTechnique = (PredictionTechnique)(ConsoleUtil.DisplayMenu("Select prediction method", Enum.GetNames(typeof(PredictionTechnique)).ToArray()) - 1);
 
+Console.Clear();
+Console.WriteLine("Simulating...");
+
 ConcurrentBag<bool> results = new ConcurrentBag<bool>();
 for (int i = 0; i < iterations; i++)
 {
@@ -20,8 +23,6 @@ for (int i = 0; i < iterations; i++)
         }));
     });
 }
-Console.Clear();
-Console.WriteLine("Simulating...");
 await Task.WhenAll(tasks);
 
 ConsoleUtil.DisplayResults(results.ToArray());
