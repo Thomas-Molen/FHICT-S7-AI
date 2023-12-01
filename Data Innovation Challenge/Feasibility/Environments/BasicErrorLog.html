@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<title>Basic error button</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<body>
+    <button id="target-button">target</button>
+</body>
+</html>
+
+<script>
+    document.getElementById("target-button").addEventListener("click", () => { throw "target was clicked" })
+</script>
