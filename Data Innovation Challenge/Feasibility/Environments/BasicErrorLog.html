@@ -6,9 +6,17 @@
 
 <body>
     <button id="target-button">target</button>
+    <button id="target-button-2">target 2</button>
 </body>
 </html>
 
 <script>
     document.getElementById("target-button").addEventListener("click", () => { throw "target was clicked" })
+    document.getElementById("target-button-2").addEventListener("click", () => { throw "target 2 was clicked" })
 </script>
+
+<style>
+	:hover{
+		border-color: red;
+	}
+</style>
