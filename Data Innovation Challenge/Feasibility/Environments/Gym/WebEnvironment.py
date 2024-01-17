@@ -10,7 +10,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-default_rewards_table = {"LOGS": {"SEVERE": 100, "WARNING": 10, "INFO": 0}}
+default_rewards_table = {"LOGS": {"SEVERE": 100, "WARNING": 10, "INFO": 0}, "ACTIONS": {"FAIL": -100}}
 def ensure_reward_structure(original_structure, dynamic_structure):
         for key, value in original_structure.items():
             if key not in dynamic_structure:
@@ -26,7 +26,8 @@ class WebEnv(gym.Env):
                  render_mode: Optional[str] = None, 
                  url=None, 
                  keywords=[],
-                 rewards = {}):
+                 rewards = {},
+                 ):
         if (url is None): # Block env if it does not have any target the use
             raise TypeError("A valid url has to be provided")
         
@@ -112,6 +113,7 @@ class WebEnv(gym.Env):
         current_url = self._web_driver.current_url
         # Return a dictionary of environment info
         return {
+            'driver': self._web_driver,
             'url': current_url,
             'interactables': self._action_elements,
             'interaction_idx': self._current_action_element
@@ -148,11 +150,23 @@ class WebEnv(gym.Env):
         return results
     # Reset environment
     def reset(self, seed: Optional[str] = None, options: Optional[str] = None):
+        # Clean up any extra windows, so that only the currently targeted one is open
+        windows = self._web_driver.window_handles
+        window_to_keep = self._web_driver.current_window_handle
+        for window in windows:
+            if (window != window_to_keep):
+                self._web_driver.switch_to.window(window)
+                self._web_driver.close()
+        self._web_driver.switch_to.window(window_to_keep) # Ensure the correct window will be target after cleanup
+        # Get all currently loaded windows, so that window changes can be tracked
+        self._windows = self._web_driver.window_handles
         # Send web driver back to original target_url
         self._web_driver.get(self.target_url)
         # Load initial internal list of interactable elements
         self._action_elements = self._get_interactable_elements()
         self._select_interactable_element(0)
+
+        self._web_driver.get_log('browser') # Clear errors that are generated on page load
 
         initial_state = self._get_current_state()
         initial_info = self._get_current_info()
@@ -171,7 +185,11 @@ class WebEnv(gym.Env):
                 self._select_interactable_element((self._current_action_element + 1) % len(self._action_elements))  # Get the next index, or loop back to first element if end was hit
                 self._steps_since_interaction += 1
             elif (action == 1): # Interact with current element
-                self._action_elements[self._current_action_element].click()
+                try:
+                    self._action_elements[self._current_action_element].click()
+                except:
+                    # Failed to click element, this could be due to it being obscured by another element, or it is disabled
+                    reward += self.reward_table["ACTIONS"]["FAIL"]
                 # Post process action steps
                 self._select_interactable_element(0) # Reset action element index
                 complete_action_phase = True
@@ -186,6 +204,9 @@ class WebEnv(gym.Env):
         if (len(self._action_elements) == 0): # No elements left to interact with, so truncate the current session
             truncated = True
             info["truncated"] = "No interactable elements on page"
+        if (self._windows != self._web_driver.window_handles): # If the stored windows are no longer inline with the open windows, refocus the environment
+            self._web_driver.switch_to.window(self._web_driver.window_handles[-1]) # Switch to the last window, as this should be the newest one
+            self._windows = self._web_driver.window_handles
         state = self._get_current_state()
         # Add extra auxiliary info
         info.update(self._get_current_info())
