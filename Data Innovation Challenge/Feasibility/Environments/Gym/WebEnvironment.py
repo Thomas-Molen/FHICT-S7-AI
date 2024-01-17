@@ -49,12 +49,12 @@ class WebEnv(gym.Env):
         # }
         self.observation_space = spaces.Dict({
             # keyword: count
-            'keywords': spaces.Dict({
-                keyword: spaces.Box(
-                    low=0, 
-                    high=np.inf, 
-                    shape=(1, ), 
-                    dtype=np.float16) for keyword in keywords}),
+            # 'keywords': spaces.Dict({
+            #     keyword: spaces.Box(
+            #         low=0, 
+            #         high=np.inf, 
+            #         shape=(1, ), 
+            #         dtype=np.float16) for keyword in keywords}),
             'interactables': spaces.Box(
                     low=0, 
                     high=np.inf, 
@@ -102,7 +102,7 @@ class WebEnv(gym.Env):
         # self._web_driver.execute_script("console.log(Array.from(document.querySelectorAll('*')).map(element => {const listeners = getEventListeners(element)return {element: element,listeners: Object.keys(listeners).map(key => {return {event: key,listeners: listeners[key]};})};}).filter(item => item.listeners.length))")
         keyword_count = self._get_keywords_from_page()
         state = {
-            'keywords': keyword_count,
+            # 'keywords': keyword_count,
             'interactables': len(self._action_elements),
             'actions_taken': self._steps_since_interaction
         }
